@@ -128,6 +128,31 @@ async def create_grievance(grievance: GrievanceCreate):
         )
 
 
+@router.get("/{grievance_id}", response_model=dict)
+async def get_grievance(grievance_id: str):
+    """Get a grievance by its ID"""
+    
+    try:
+        # Retrieve the grievance record
+        resp = xata.records().get("Grievance", grievance_id)
+        
+        if not resp.is_success():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Grievance not found"
+            )
+            
+        return {
+            "status": "success",
+            "grievance": resp
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
 @router.put("/{grievance_id}", response_model=dict)
 async def update_grievance_status(grievance_id: str, update_data: GrievanceUpdate):
     """Update the status of a grievance"""
