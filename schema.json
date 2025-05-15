@@ -28,6 +28,154 @@
           "type": "string"
         }
       ]
+    },
+    {
+      "name": "Grievances",
+      "columns": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "text"
+        },
+        {
+          "name": "category",
+          "type": "string"
+        },
+        {
+          "name": "priority",
+          "type": "string"
+        },
+        {
+          "name": "user_id",
+          "type": "link",
+          "link": {
+            "table": "Users"
+          }
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime"
+        },
+        {
+          "name": "resolution_notes",
+          "type": "text"
+        },
+        {
+          "name": "grievance_received_date",
+          "type": "datetime"
+        },
+        {
+          "name": "grievance_closing_date",
+          "type": "datetime"
+        },
+        {
+          "name": "organisation_closing_date",
+          "type": "datetime"
+        },
+        {
+          "name": "org_status_date",
+          "type": "datetime"
+        },
+        {
+          "name": "reported_as_covid19_case_date",
+          "type": "datetime"
+        },
+        {
+          "name": "covid19_category",
+          "type": "string"
+        },
+        {
+          "name": "cpgrams_category",
+          "type": "string"
+        },
+        {
+          "name": "reformed_flag",
+          "type": "boolean"
+        },
+        {
+          "name": "reformed_top_level_category",
+          "type": "string"
+        },
+        {
+          "name": "reformed_last_level_category",
+          "type": "string"
+        },
+        {
+          "name": "forwarded_to_subordinate",
+          "type": "boolean"
+        },
+        {
+          "name": "forwarded_to_subordinate_details",
+          "type": "string"
+        },
+        {
+          "name": "rating",
+          "type": "int"
+        },
+        {
+          "name": "feedback",
+          "type": "text"
+        },
+        {
+          "name": "satisfaction_level",
+          "type": "string"
+        },
+        {
+          "name": "final_reply",
+          "type": "text"
+        },
+        {
+          "name": "appeal_no",
+          "type": "string"
+        },
+        {
+          "name": "appeal_date",
+          "type": "datetime"
+        },
+        {
+          "name": "appeal_reason",
+          "type": "text"
+        },
+        {
+          "name": "appeal_closing_date",
+          "type": "datetime"
+        },
+        {
+          "name": "appeal_closing_remarks",
+          "type": "text"
+        },
+        {
+          "name": "organisation_grievance_receive_date",
+          "type": "datetime"
+        },
+        {
+          "name": "officers_forwarding_grievance",
+          "type": "string"
+        },
+        {
+          "name": "date_of_receiving",
+          "type": "datetime"
+        },
+        {
+          "name": "officer_closed_by",
+          "type": "string"
+        },
+        {
+          "name": "final_status",
+          "type": "string"
+        }
+      ]
     }
   ]
 }

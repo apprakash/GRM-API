@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Body, status
-from ..dependencies import get_query_token
+from ..dependencies import get_query_token, get_token_header
 from pydantic import BaseModel, Field, field_validator
 import re
 from xata.client import XataClient
@@ -11,6 +11,7 @@ xata = XataClient()
 router = APIRouter(
     prefix="/users",
     tags=["users"],
+    # Removed router-level dependency to apply specific auth to endpoints
     responses={404: {"description": "Not found"}},
 )
 
@@ -42,7 +43,7 @@ class UserCreate(UserBase):
         return v
 
 
-@router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=User, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_token_header)])
 async def create_user(user: UserCreate):
     """Create a new user in the Xata database with validation"""
 
@@ -66,7 +67,7 @@ async def create_user(user: UserCreate):
         )
 
 
-@router.get("/{user_id}", response_model=dict)
+@router.get("/{user_id}", response_model=dict, dependencies=[Depends(get_query_token)])
 async def get_user(user_id: str):
     """Get a user by ID from the Xata database"""
     
