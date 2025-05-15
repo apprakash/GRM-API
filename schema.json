@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "name": "Users",
+      "columns": [
+        {
+          "name": "Name",
+          "type": "string"
+        },
+        {
+          "name": "Email",
+          "type": "string"
+        },
+        {
+          "name": "State",
+          "type": "string"
+        },
+        {
+          "name": "Gender",
+          "type": "string"
+        },
+        {
+          "name": "District",
+          "type": "string"
+        },
+        {
+          "name": "Mobile",
+          "type": "string"
+        }
+      ]
+    }
+  ]
+}
