@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Body, status
-from ..dependencies import get_token_header
+from fastapi import APIRouter, Depends, HTTPException, status
+from ..dependencies import verify_token
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 from xata.client import XataClient
 from dotenv import load_dotenv
@@ -12,7 +12,7 @@ xata = XataClient()
 router = APIRouter(
     prefix="/grievances",
     tags=["grievances"],
-    dependencies=[Depends(get_token_header)],
+    dependencies=[Depends(verify_token)],
     responses={404: {"description": "Not found"}},
 )
 

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends
-from .dependencies import get_query_token, get_token_header
+from .dependencies import verify_token
 from .routers import grievances, users
 from .internal import admin
 
@@ -12,7 +12,7 @@ app.include_router(
     admin.router,
     prefix="/admin",
     tags=["admin"],
-    dependencies=[Depends(get_token_header)],
+    dependencies=[Depends(verify_token)],
     responses={418: {"description": "I'm a teapot"}},
 )
 

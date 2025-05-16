@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Body, status
-from ..dependencies import get_query_token, get_token_header
-from pydantic import BaseModel, Field, field_validator
+from fastapi import APIRouter, Depends, HTTPException, status
+from ..dependencies import verify_token
+from pydantic import BaseModel, field_validator
 import re
 from xata.client import XataClient
 from dotenv import load_dotenv
@@ -11,7 +11,7 @@ xata = XataClient()
 router = APIRouter(
     prefix="/users",
     tags=["users"],
-    # Removed router-level dependency to apply specific auth to endpoints
+    dependencies=[Depends(verify_token)],
     responses={404: {"description": "Not found"}},
 )
 
@@ -24,6 +24,10 @@ class UserBase(BaseModel):
     Mobile: str
 
 class User(UserBase):
+    id: str
+    status: str
+
+class UserResponse(BaseModel):
     id: str
     status: str
 
@@ -43,7 +47,7 @@ class UserCreate(UserBase):
         return v
 
 
-@router.post("/", response_model=User, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_token_header)])
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(user: UserCreate):
     """Create a new user in the Xata database with validation"""
 
@@ -57,8 +61,6 @@ async def create_user(user: UserCreate):
         "Mobile": user.Mobile
        })
        assert resp.is_success()
-       print(resp)
-       print("Record Id: %s" % resp["id"])
        return {"id": resp["id"], "status": "User created successfully"}
     except Exception as e:
         raise HTTPException(
@@ -67,7 +69,7 @@ async def create_user(user: UserCreate):
         )
 
 
-@router.get("/{user_id}", response_model=dict, dependencies=[Depends(get_query_token)])
+@router.get("/{user_id}", response_model=dict)
 async def get_user(user_id: str):
     """Get a user by ID from the Xata database"""
     

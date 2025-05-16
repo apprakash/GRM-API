@@ -1,11 +1,21 @@
-from fastapi import Header, HTTPException
+from fastapi import HTTPException, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-async def get_token_header(x_token: str = Header()):
-    if x_token != "fake-super-secret-token":
-        raise HTTPException(status_code=400, detail="X-Token header invalid")
-    return x_token
+# List of valid tokens (in a real application, this might be stored more securely)
+VALID_TOKENS = [
+    "token1",
+    "token2",
+    "token3",
+    "fakesupersecrettoken"
+]
 
-async def get_query_token(token: str):
-    if token != "jessica":
-        raise HTTPException(status_code=400, detail="No Jessica token provided")
-    return token
+security = HTTPBearer()
+
+async def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)):
+    if credentials.credentials not in VALID_TOKENS:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return credentials.credentials
