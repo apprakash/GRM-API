@@ -4,3 +4,6 @@ python-multipart>=0.0.9
 pydantic>=2.6.0
 xata
 python-dotenv
+instructor
+openai
+weaviate-client

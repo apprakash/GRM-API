@@ -1,9 +1,8 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 
 # Grievance status options
 STATUS_OPTIONS = ["pending", "in_progress", "resolved", "rejected"]
-
 
 class GrievanceBase(BaseModel):
     category: str
@@ -54,3 +53,9 @@ class Grievance(GrievanceBase):
     date_of_receiving: Optional[str] = None
     officer_closed_by: Optional[str] = None
     final_status: Optional[str] = None
+
+
+class FollowUpQuestions(BaseModel):
+    is_correct_category: bool
+    missing_information: bool
+    follow_up_questions: List[str]

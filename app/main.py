@@ -1,9 +1,19 @@
 from fastapi import FastAPI, Depends
+from contextlib import asynccontextmanager
 from .dependencies import verify_token
 from .routers import grievances, users
 from .internal import admin
+from .utils.grievance_utils import disconnect_client
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: No specific actions needed as client is lazily initialized
+    yield
+    # Shutdown: Disconnect the Weaviate client
+    disconnect_client()
+
+
+app = FastAPI(lifespan=lifespan)
 
 # Include routers with their dependencies
 app.include_router(users.router)

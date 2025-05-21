@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_token
 from datetime import datetime
+import json
 from xata.client import XataClient
 from dotenv import load_dotenv
 from ..models.grievance_models import GrievanceCreate, GrievanceUpdate, Grievance, STATUS_OPTIONS
+from ..utils.grievance_utils import process_grievance_category, generate_follow_up_questions
 
 load_dotenv()
 xata = XataClient()
@@ -21,7 +23,6 @@ async def create_grievance(grievance: GrievanceCreate):
     """Create a new grievance in the Xata database"""
     
     try:
-        # Verify that the user exists
         user_data = xata.records().get("Users", grievance.user_id)
         if not user_data.is_success():
             raise HTTPException(
@@ -43,19 +44,25 @@ async def create_grievance(grievance: GrievanceCreate):
             "reformed_last_level_category": grievance.reformed_last_level_category,
             "reformed_flag": grievance.reformed_flag
         }
-        
+
+        category_info = process_grievance_category(grievance.description)
+        if category_info['top_category']:
+            follow_up_questions = generate_follow_up_questions(grievance.description, category_info['top_category'], category_info['formatted_fields'])
+
         resp = xata.records().insert("Grievance", grievance_data)
-        print(resp)
         if not resp.is_success():
             print(resp)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create grievance"
+                detail="Failed to create grievance",            
             )
             
         return {
             "id": resp["id"],
             "status": "Grievance created successfully",
+            "required_info": category_info['formatted_fields'],
+            "classified_category": category_info['classified_category'],
+            "follow_up_questions": follow_up_questions
         }
         
     except Exception as e:
@@ -69,17 +76,13 @@ async def create_grievance(grievance: GrievanceCreate):
 @router.get("/{grievance_id}", response_model=dict)
 async def get_grievance(grievance_id: str):
     """Get a grievance by its ID"""
-    
     try:
-        # Retrieve the grievance record
         resp = xata.records().get("Grievance", grievance_id)
-        
         if not resp.is_success():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Grievance not found"
-            )
-            
+            ) 
         return {
             "status": "success",
             "grievance": resp
