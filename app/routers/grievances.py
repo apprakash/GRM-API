@@ -3,7 +3,7 @@ from ..dependencies import verify_token
 from datetime import datetime
 from xata.client import XataClient
 from dotenv import load_dotenv
-from ..models.grievance_models import GrievanceBase, GrievanceCreate, GrievanceUpdate, Grievance, STATUS_OPTIONS
+from ..models.grievance_models import GrievanceCreate, GrievanceUpdate, Grievance, STATUS_OPTIONS
 
 load_dotenv()
 xata = XataClient()
@@ -29,11 +29,8 @@ async def create_grievance(grievance: GrievanceCreate):
                 detail="User not found"
             )
         
-        # Create the grievance record
-        # Format datetime in RFC 3339 format as required by Xata
         current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         grievance_data = {
-            "title": grievance.title,
             "description": grievance.description,
             "category": grievance.category,
             "priority": grievance.priority,
@@ -46,11 +43,6 @@ async def create_grievance(grievance: GrievanceCreate):
             "reformed_last_level_category": grievance.reformed_last_level_category,
             "reformed_flag": grievance.reformed_flag
         }
-        
-        # cpgrams_category also needs to be a datetime in RFC 3339 format
-        if grievance.cpgrams_category:
-            # Using the same current_time for cpgrams_category as it also expects a datetime
-            grievance_data["cpgrams_category"] = current_time
         
         resp = xata.records().insert("Grievance", grievance_data)
         print(resp)
