@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_token
-from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime
 from xata.client import XataClient
 from dotenv import load_dotenv
+from ..models.grievance_models import GrievanceBase, GrievanceCreate, GrievanceUpdate, Grievance, STATUS_OPTIONS
 
 load_dotenv()
 xata = XataClient()
@@ -16,59 +15,6 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-# Grievance status options
-STATUS_OPTIONS = ["pending", "in_progress", "resolved", "rejected"]
-
-
-class GrievanceBase(BaseModel):
-    title: str
-    description: str
-    category: str
-    priority: str = Field(default="medium", description="Priority level: low, medium, high, critical")
-    cpgrams_category: Optional[str] = None
-    reformed_top_level_category: Optional[str] = None
-    reformed_last_level_category: Optional[str] = None
-
-class GrievanceCreate(GrievanceBase):
-    user_id: str
-    covid19_category: Optional[str] = None
-    reformed_flag: Optional[bool] = False
-
-class GrievanceUpdate(BaseModel):
-    status: str
-    resolution_notes: Optional[str] = None
-
-class Grievance(GrievanceBase):
-    id: str
-    user_id: str
-    status: str
-    created_at: str
-    updated_at: Optional[str] = None
-    resolution_notes: Optional[str] = None
-    grievance_received_date: Optional[str] = None
-    grievance_closing_date: Optional[str] = None
-    organisation_closing_date: Optional[str] = None
-    org_status_date: Optional[str] = None
-    reported_as_covid19_case_date: Optional[str] = None
-    covid19_category: Optional[str] = None
-    reformed_flag: Optional[bool] = False
-    forwarded_to_subordinate: Optional[bool] = False
-    forwarded_to_subordinate_details: Optional[str] = None
-    rating: Optional[int] = None
-    feedback: Optional[str] = None
-    satisfaction_level: Optional[str] = None
-    final_reply: Optional[str] = None
-    appeal_no: Optional[str] = None
-    appeal_date: Optional[str] = None
-    appeal_reason: Optional[str] = None
-    appeal_closing_date: Optional[str] = None
-    appeal_closing_remarks: Optional[str] = None
-    organisation_grievance_receive_date: Optional[str] = None
-    organisation_grievance_close_date: Optional[str] = None
-    officers_forwarding_grievance: Optional[str] = None
-    date_of_receiving: Optional[str] = None
-    officer_closed_by: Optional[str] = None
-    final_status: Optional[str] = None
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_grievance(grievance: GrievanceCreate):
@@ -96,7 +42,6 @@ async def create_grievance(grievance: GrievanceCreate):
             "created_at": current_time,
             "updated_at": current_time,
             "grievance_received_date": current_time,
-            # Removed covid19_category as it doesn't exist in the database
             "reformed_top_level_category": grievance.reformed_top_level_category,
             "reformed_last_level_category": grievance.reformed_last_level_category,
             "reformed_flag": grievance.reformed_flag
@@ -128,6 +73,7 @@ async def create_grievance(grievance: GrievanceCreate):
         )
 
 
+
 @router.get("/{grievance_id}", response_model=dict)
 async def get_grievance(grievance_id: str):
     """Get a grievance by its ID"""
@@ -152,6 +98,7 @@ async def get_grievance(grievance_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+
 
 @router.put("/{grievance_id}", response_model=dict)
 async def update_grievance_status(grievance_id: str, update_data: GrievanceUpdate):

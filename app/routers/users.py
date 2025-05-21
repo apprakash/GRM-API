@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_token
-from pydantic import BaseModel, field_validator
-import re
 from xata.client import XataClient
 from dotenv import load_dotenv
+from ..models.user_models import UserBase, User, UserResponse, UserCreate
 
 load_dotenv()
 xata = XataClient()
@@ -14,37 +13,6 @@ router = APIRouter(
     dependencies=[Depends(verify_token)],
     responses={404: {"description": "Not found"}},
 )
-
-class UserBase(BaseModel):
-    Name: str
-    Email: str
-    State: str
-    Gender: str
-    District: str
-    Mobile: str
-
-class User(UserBase):
-    id: str
-    status: str
-
-class UserResponse(BaseModel):
-    id: str
-    status: str
-
-class UserCreate(UserBase):
-    @field_validator('Mobile')
-    @classmethod
-    def validate_mobile(cls, v):
-        if not re.match(r'^\d{10}$', v):
-            raise ValueError('Mobile number must be exactly 10 digits')
-        return v
-        
-    @field_validator('Email')
-    @classmethod
-    def validate_email(cls, v):
-        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', v):
-            raise ValueError('Invalid email format')
-        return v
 
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
