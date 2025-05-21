@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_token
 from datetime import datetime
-import json
 from xata.client import XataClient
 from dotenv import load_dotenv
-from ..models.grievance_models import GrievanceCreate, GrievanceUpdate, Grievance, STATUS_OPTIONS
+from ..models.grievance_models import GrievanceCreate, GrievanceUpdate, FollowUpResponse, STATUS_OPTIONS
 from ..utils.grievance_utils import process_grievance_category, generate_follow_up_questions
 
 load_dotenv()
@@ -45,25 +44,58 @@ async def create_grievance(grievance: GrievanceCreate):
             "reformed_flag": grievance.reformed_flag
         }
 
+        # Process grievance category to get formatted fields and category information
         category_info = process_grievance_category(grievance.description)
+        
+        # Initialize follow-up questions and category data
+        follow_up_questions = None
+        
+        # If we have a category match, get follow-up questions and update grievance data
         if category_info['top_category']:
-            follow_up_questions = generate_follow_up_questions(grievance.description, category_info['top_category'], category_info['formatted_fields'])
+            grievance_data["classified_category"] = category_info['classified_category']
+            
+            # Generate follow-up questions
+            follow_up_questions = generate_follow_up_questions(
+                grievance.description, 
+                category_info['top_category'], 
+                category_info['formatted_fields']
+            )
+            
+            # If follow-up questions were generated successfully, store them
+            if follow_up_questions:
+                grievance_data["follow_up_questions"] = follow_up_questions.follow_up_questions
+                grievance_data["missing_information"] = follow_up_questions.missing_information
+                grievance_data["is_correct_category"] = follow_up_questions.is_correct_category
 
+        # Insert the grievance with all the state information
         resp = xata.records().insert("Grievance", grievance_data)
         if not resp.is_success():
-            print(resp)
+            print(f"Failed to create grievance: {resp}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create grievance",            
             )
             
-        return {
+        # Prepare the response with all relevant information
+        response_data = {
             "id": resp["id"],
             "status": "Grievance created successfully",
-            "required_info": category_info['formatted_fields'],
-            "classified_category": category_info['classified_category'],
-            "follow_up_questions": follow_up_questions
         }
+        
+        # Include category information if available
+        if category_info['top_category']:
+            response_data.update({
+                "required_info": category_info['formatted_fields'],
+                "classified_category": category_info['classified_category'],
+            })
+            
+            # Include follow-up questions if available
+            if follow_up_questions:
+                response_data["follow_up_questions"] = follow_up_questions.follow_up_questions
+                response_data["is_correct_category"] = follow_up_questions.is_correct_category
+                response_data["missing_information"] = follow_up_questions.missing_information
+        
+        return response_data
         
     except Exception as e:
         raise HTTPException(
@@ -95,6 +127,30 @@ async def get_grievance(grievance_id: str):
         )
 
 
+@router.post("/{grievance_id}/follow-up", response_model=dict)
+async def submit_follow_up(grievance_id: str, follow_up: FollowUpResponse):
+    """Submit additional information in response to follow-up questions"""
+    try:
+        # First, get the existing grievance
+        grievance_resp = xata.records().get("Grievance", grievance_id)
+        if not grievance_resp.is_success():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Grievance not found"
+            )
+        
+        return {
+            "status": "success",
+            "grievance": grievance_resp
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
 @router.put("/{grievance_id}", response_model=dict)
 async def update_grievance_status(grievance_id: str, update_data: GrievanceUpdate):
     """Update the status of a grievance"""
@@ -104,6 +160,7 @@ async def update_grievance_status(grievance_id: str, update_data: GrievanceUpdat
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid status. Must be one of: {', '.join(STATUS_OPTIONS)}"
         )
+        
     
     try:
         # Check if grievance exists

@@ -140,9 +140,7 @@ def fetch_category(grievance):
                 "description_of_grievance_category": data.properties.get("description_of_Grievance_Category"),
                 "gpt_form_field_generation": data.properties.get("gPT_Form_Field_Generation"),
             }
-            bucket_data.append(result)
-            print(result)
-            
+            bucket_data.append(result)            
         return bucket_data
     except Exception as e:
         print(f"Error fetching categories: {e}")

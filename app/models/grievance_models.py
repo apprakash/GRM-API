@@ -53,9 +53,21 @@ class Grievance(GrievanceBase):
     date_of_receiving: Optional[str] = None
     officer_closed_by: Optional[str] = None
     final_status: Optional[str] = None
+    # Fields for category and follow-up state management
+    classified_category: Optional[str] = None
+    formatted_fields: Optional[str] = None
+    follow_up_questions: Optional[List[str]] = None
+    missing_information: Optional[bool] = None
+    is_correct_category: Optional[bool] = None
+    category_data: Optional[dict] = None
 
 
 class FollowUpQuestions(BaseModel):
     is_correct_category: bool
     missing_information: bool
     follow_up_questions: List[str]
+
+
+class FollowUpResponse(BaseModel):
+    additional_information: str
+    question_responses: Optional[dict] = None
