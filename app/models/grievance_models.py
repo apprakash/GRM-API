@@ -5,17 +5,24 @@ from typing import Optional, List
 STATUS_OPTIONS = ["pending", "in_progress", "resolved", "rejected"]
 
 class GrievanceBase(BaseModel):
+    title: str
     category: str
-    reformed_top_level_category: Optional[str] = None
-    reformed_last_level_category: Optional[str] = None
     description: str
     priority: str = Field(default="medium", description="Priority level: low, medium, high, critical")
     cpgrams_category: Optional[str] = None
 
 
-class GrievanceCreate(GrievanceBase):
+class GrievanceCreate(BaseModel):
+    title: str
+    category: str
+    description: str
+    priority: str = Field(default="medium", description="Priority level: low, medium, high, critical")
     user_id: str
+    cpgrams_category: Optional[str] = None
+    reformed_top_level_category: Optional[str] = None
+    reformed_last_level_category: Optional[str] = None
     reformed_flag: Optional[bool] = False
+    # Any other optional fields can be added here
 
 
 class GrievanceUpdate(BaseModel):

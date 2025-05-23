@@ -19,7 +19,7 @@ router = APIRouter(
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_grievance(grievance: GrievanceCreate):
-    """Create a new grievance in the Xata database"""
+    """Create a new grievance in the Xata database with only required fields"""
     
     try:
         user_data = xata.records().get("Users", grievance.user_id)
@@ -30,7 +30,9 @@ async def create_grievance(grievance: GrievanceCreate):
             )
         
         current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        # Start with required fields
         grievance_data = {
+            "title": grievance.title,
             "description": grievance.description,
             "category": grievance.category,
             "priority": grievance.priority,
@@ -38,11 +40,21 @@ async def create_grievance(grievance: GrievanceCreate):
             "status": "pending",
             "created_at": current_time,
             "updated_at": current_time,
-            "grievance_received_date": current_time,
-            "reformed_top_level_category": grievance.reformed_top_level_category,
-            "reformed_last_level_category": grievance.reformed_last_level_category,
-            "reformed_flag": grievance.reformed_flag
+            "grievance_received_date": current_time
         }
+        
+        if grievance.cpgrams_category is not None:
+            grievance_data["cpgrams_category"] = grievance.cpgrams_category
+        
+        # Add optional fields if they are provided
+        if grievance.reformed_top_level_category is not None:
+            grievance_data["reformed_top_level_category"] = grievance.reformed_top_level_category
+            
+        if grievance.reformed_last_level_category is not None:
+            grievance_data["reformed_last_level_category"] = grievance.reformed_last_level_category
+            
+        if grievance.reformed_flag is not None:
+            grievance_data["reformed_flag"] = grievance.reformed_flag
 
         # Insert the grievance with all the state information
         resp = xata.records().insert("Grievance", grievance_data)
@@ -91,61 +103,6 @@ async def get_grievance(grievance_id: str):
         )
 
 
-@router.post("/{grievance_id}/follow-up", response_model=dict)
-async def submit_follow_up(grievance_id: str, follow_up: FollowUpResponse):
-    """Submit additional information in response to follow-up questions"""
-    try:
-        # First, get the existing grievance
-        grievance_resp = xata.records().get("Grievance", grievance_id)
-        if not grievance_resp.is_success():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Grievance not found"
-            )
-        
-        # Get the current time for the update
-        current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        
-        # Extract the original grievance data
-        original_description = grievance_resp.get("description", "")
-        follow_up_questions = grievance_resp.get("follow_up_questions", [])
-        
-        # Prepare the update data
-        update_data = {
-            "updated_at": current_time,
-            "additional_information": follow_up.additional_information,
-        }
-        
-        verification = verify_follow_up_answers(
-            original_description,
-            follow_up_questions,
-            follow_up.additional_information,
-        )
-
-        # update_resp = xata.records().update("Grievance", grievance_id, update_data)
-        # if not update_resp.is_success():
-        #     raise HTTPException(
-        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        #         detail="Failed to update grievance with follow-up information"
-        #     )
-        
-        # Prepare the response
-        response = {
-            "id": grievance_id,
-            "status": "Follow-up information submitted successfully",
-            "verification": verification
-        }
-        
-        if "classified_category" in update_data:
-            response["updated_category"] = update_data["classified_category"]
-        
-        return response
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
 
 
 @router.put("/{grievance_id}", response_model=dict)
