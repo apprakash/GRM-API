@@ -44,29 +44,6 @@ async def create_grievance(grievance: GrievanceCreate):
             "reformed_flag": grievance.reformed_flag
         }
 
-        # Process grievance category to get formatted fields and category information
-        category_info = process_grievance_category(grievance.description)
-        
-        # Initialize follow-up questions and category data
-        follow_up_questions = None
-        
-        # If we have a category match, get follow-up questions and update grievance data
-        if category_info['top_category']:
-            grievance_data["classified_category"] = category_info['classified_category']
-            
-            # Generate follow-up questions
-            follow_up_questions = generate_follow_up_questions(
-                grievance.description, 
-                category_info['top_category'], 
-                category_info['formatted_fields']
-            )
-            
-            # If follow-up questions were generated successfully, store them
-            if follow_up_questions:
-                grievance_data["follow_up_questions"] = follow_up_questions.follow_up_questions
-                grievance_data["missing_information"] = follow_up_questions.missing_information
-                grievance_data["is_correct_category"] = follow_up_questions.is_correct_category
-
         # Insert the grievance with all the state information
         resp = xata.records().insert("Grievance", grievance_data)
         if not resp.is_success():
@@ -81,19 +58,6 @@ async def create_grievance(grievance: GrievanceCreate):
             "id": resp["id"],
             "status": "Grievance created successfully",
         }
-        
-        # Include category information if available
-        if category_info['top_category']:
-            response_data.update({
-                "required_info": category_info['formatted_fields'],
-                "classified_category": category_info['classified_category'],
-            })
-            
-            # Include follow-up questions if available
-            if follow_up_questions:
-                response_data["follow_up_questions"] = follow_up_questions.follow_up_questions
-                response_data["is_correct_category"] = follow_up_questions.is_correct_category
-                response_data["missing_information"] = follow_up_questions.missing_information
         
         return response_data
         
