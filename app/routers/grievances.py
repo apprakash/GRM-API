@@ -5,6 +5,7 @@ from xata.client import XataClient
 from dotenv import load_dotenv
 from ..models.grievance_models import GrievanceCreate, GrievanceUpdate, FollowUpResponse, STATUS_OPTIONS
 from ..utils.grievance_utils import process_grievance_category, generate_follow_up_questions, verify_follow_up_answers
+from typing import List
 
 load_dotenv()
 xata = XataClient()
@@ -80,7 +81,6 @@ async def create_grievance(grievance: GrievanceCreate):
         )
 
 
-
 @router.get("/{grievance_id}", response_model=dict)
 async def get_grievance(grievance_id: str):
     """Get a grievance by its ID"""
@@ -145,6 +145,46 @@ async def update_grievance_status(grievance_id: str, update_data: GrievanceUpdat
             "id": grievance_id,
             "status": "Grievance updated successfully",
             "updated_fields": update_fields
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/user/{user_id}", response_model=dict)
+async def get_user_grievances(user_id: str):
+    """Get all grievances linked to a specific user ID"""
+    try:
+        # Query the Xata database for grievances with the specified user_id
+        query = {
+            "filter": {
+                "user_id": user_id
+            }
+        }
+        resp = xata.data().query("Grievance", query)
+        
+        if not resp.is_success():
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch grievances"
+            )
+            
+        # Check if user exists
+        user_data = xata.records().get("Users", user_id)
+        if not user_data.is_success():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        return {
+            "status": "success",
+            "user_id": user_id,
+            "grievances": resp.get("records", []),
+            "total": len(resp.get("records", []))
         }
         
     except Exception as e:
