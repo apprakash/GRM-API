@@ -70,4 +70,9 @@ class FollowUpQuestions(BaseModel):
 
 class FollowUpResponse(BaseModel):
     additional_information: str
-    question_responses: Optional[dict] = None
+
+
+class AnswerVerification(BaseModel):
+    all_questions_answered: bool
+    additional_follow_up_needed: bool
+    suggested_follow_up: List[str] = Field(default_factory=list)

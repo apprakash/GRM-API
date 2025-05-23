@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from .dependencies import verify_token
-from .routers import grievances, users
+from .routers import grievances, users, category
 from .internal import admin
 from .utils.grievance_utils import disconnect_client
 
@@ -28,6 +28,7 @@ app.add_middleware(
 # Include routers with their dependencies
 app.include_router(users.router)
 app.include_router(grievances.router)
+app.include_router(category.router)
 app.include_router(
     admin.router,
     prefix="/admin",

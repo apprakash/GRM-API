@@ -7,7 +7,7 @@ from weaviate.classes.query import Rerank
 from dotenv import load_dotenv
 from openai import OpenAI
 import instructor
-from ..models.grievance_models import FollowUpQuestions
+from ..models.grievance_models import FollowUpQuestions, AnswerVerification
 
 # Load environment variables
 load_dotenv()
@@ -220,6 +220,16 @@ def process_grievance_category(grievance_text):
 
 
 def generate_follow_up_questions(grievance, category, required_fields):
+    """Generate follow-up questions for a grievance based on missing information.
+    
+    Args:
+        grievance (str): The grievance description
+        category (dict): The category information
+        required_fields (str): The formatted required fields
+        
+    Returns:
+        FollowUpQuestions: Object containing follow-up questions and categorization info
+    """
     ins_client = instructor.from_openai(OpenAI())
 
     prompt = f"""
@@ -254,4 +264,58 @@ def generate_follow_up_questions(grievance, category, required_fields):
     except Exception as e:
         print(f"Error generating follow-up questions: {e}")
         return None
+
+
+def verify_follow_up_answers(original_grievance, follow_up_questions, additional_information):
+    """Verify if the additional information answers all the follow-up questions.
+    
+    Args:
+        original_grievance (str): The original grievance description
+        follow_up_questions (list): List of follow-up questions that were asked
+        additional_information (str): Additional information provided by the user
+        question_responses (dict, optional): Specific responses to individual questions
         
+    Returns:
+        AnswerVerification: Object containing verification results
+    """
+    ins_client = instructor.from_openai(OpenAI())
+    
+    prompt = f"""
+    You are an AI assistant helping to verify if a user's additional information answers all the follow-up questions for a grievance.
+    
+    ORIGINAL GRIEVANCE:
+    {original_grievance}
+    
+    FOLLOW-UP QUESTIONS THAT WERE ASKED:
+    {"\n".join([f"{i+1}. {q}" for i, q in enumerate(follow_up_questions)])}
+    
+    ADDITIONAL INFORMATION PROVIDED BY USER:
+    {additional_information}
+    
+    YOUR TASK:
+    Analyze whether the additional information provided by the user adequately answers each of the follow-up questions.
+    
+    Please provide:
+    1. A determination of whether each question was answered completely, partially, or not at all
+    2. For each question, explain your reasoning for the determination
+    3. For partially answered or unanswered questions, specify exactly what information is still missing
+    
+    IMPORTANT: Do NOT generate new follow-up questions. Focus ONLY on verifying if the existing questions have been answered.
+    
+    Be specific and detailed in your analysis, focusing solely on the questions that were originally asked.
+    """
+    
+    try:
+        response = ins_client.chat.completions.create(
+            model="gpt-4.1-mini",
+            response_model=AnswerVerification,
+            messages=[
+                {"role": "system", "content": "You are an AI assistant that verifies if follow-up questions for grievances have been answered."},
+                {"role": "user", "content": prompt}
+            ],
+        )
+        
+        return response
+    except Exception as e:
+        print(f"Error verifying follow-up answers: {e}")
+        return None

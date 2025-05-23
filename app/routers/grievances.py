@@ -4,7 +4,7 @@ from datetime import datetime
 from xata.client import XataClient
 from dotenv import load_dotenv
 from ..models.grievance_models import GrievanceCreate, GrievanceUpdate, FollowUpResponse, STATUS_OPTIONS
-from ..utils.grievance_utils import process_grievance_category, generate_follow_up_questions
+from ..utils.grievance_utils import process_grievance_category, generate_follow_up_questions, verify_follow_up_answers
 
 load_dotenv()
 xata = XataClient()
@@ -139,10 +139,43 @@ async def submit_follow_up(grievance_id: str, follow_up: FollowUpResponse):
                 detail="Grievance not found"
             )
         
-        return {
-            "status": "success",
-            "grievance": grievance_resp
+        # Get the current time for the update
+        current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        
+        # Extract the original grievance data
+        original_description = grievance_resp.get("description", "")
+        follow_up_questions = grievance_resp.get("follow_up_questions", [])
+        
+        # Prepare the update data
+        update_data = {
+            "updated_at": current_time,
+            "additional_information": follow_up.additional_information,
         }
+        
+        verification = verify_follow_up_answers(
+            original_description,
+            follow_up_questions,
+            follow_up.additional_information,
+        )
+
+        # update_resp = xata.records().update("Grievance", grievance_id, update_data)
+        # if not update_resp.is_success():
+        #     raise HTTPException(
+        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        #         detail="Failed to update grievance with follow-up information"
+        #     )
+        
+        # Prepare the response
+        response = {
+            "id": grievance_id,
+            "status": "Follow-up information submitted successfully",
+            "verification": verification
+        }
+        
+        if "classified_category" in update_data:
+            response["updated_category"] = update_data["classified_category"]
+        
+        return response
         
     except Exception as e:
         raise HTTPException(
@@ -160,7 +193,7 @@ async def update_grievance_status(grievance_id: str, update_data: GrievanceUpdat
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid status. Must be one of: {', '.join(STATUS_OPTIONS)}"
         )
-        
+
     
     try:
         # Check if grievance exists
