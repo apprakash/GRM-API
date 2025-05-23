@@ -3,9 +3,8 @@ from ..dependencies import verify_token
 from datetime import datetime
 from xata.client import XataClient
 from dotenv import load_dotenv
-from ..models.grievance_models import GrievanceCreate, GrievanceUpdate, FollowUpResponse, STATUS_OPTIONS
-from ..utils.grievance_utils import process_grievance_category, generate_follow_up_questions, verify_follow_up_answers
-from typing import List
+from ..models.grievance_models import GrievanceCreate, GrievanceUpdate, STATUS_OPTIONS
+
 
 load_dotenv()
 xata = XataClient()
