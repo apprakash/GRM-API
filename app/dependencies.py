@@ -6,7 +6,8 @@ VALID_TOKENS = [
     "token1",
     "token2",
     "token3",
-    "fakesupersecrettoken"
+    "fakesupersecrettoken",
+    "newtoken123"
 ]
 
 security = HTTPBearer()
