@@ -68,7 +68,12 @@ async def create_grievance(grievance: GrievanceCreate):
         # Prepare the response with all relevant information
         response_data = {
             "id": resp["id"],
-            "status": "Grievance created successfully"
+            "status": "Grievance created successfully",
+            "title": grievance.title,
+            "description": grievance.description,
+            "priority": grievance.priority,
+            "user_id": grievance.user_id,
+            "cpgrams_category": grievance.cpgrams_category,
         }
         
         return response_data
