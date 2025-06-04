@@ -69,6 +69,13 @@ async def create_grievance(grievance: GrievanceCreate):
         response_data = {
             "id": resp["id"],
             "status": "Grievance created successfully",
+            "created_at": resp["created_at"],
+            "title": resp["title"],
+            "description": resp["description"],
+            "priority": resp["priority"],
+            "user_id": resp["user_id"],
+            "cpgrams_category": resp["cpgrams_category"],
+            "status": resp["status"]
         }
         
         return response_data
@@ -154,23 +161,9 @@ async def update_grievance_status(grievance_id: str, update_data: GrievanceUpdat
 
 
 @router.get("/user/{user_id}", response_model=dict)
-async def get_user_grievances(user_id: str):
+async def get_user_grievances(user_id: str, fetch_all: bool = True, page: int = 1, size: int = 10):
     """Get all grievances linked to a specific user ID"""
     try:
-        # Query the Xata database for grievances with the specified user_id
-        query = {
-            "filter": {
-                "user_id": user_id
-            }
-        }
-        resp = xata.data().query("Grievance", query)
-        
-        if not resp.is_success():
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to fetch grievances"
-            )
-            
         # Check if user exists
         user_data = xata.records().get("Users", user_id)
         if not user_data.is_success():
@@ -179,12 +172,91 @@ async def get_user_grievances(user_id: str):
                 detail="User not found"
             )
         
-        return {
+        all_records = []
+        
+        if fetch_all:
+            current_page = 0
+            has_more = True
+            
+            while has_more:
+                query = {
+                    "filter": {
+                        "user_id": user_id
+                    },
+                    "page": {
+                        "size": size,
+                        "offset": current_page * size
+                    }
+                }
+                
+                resp = xata.data().query("Grievance", query)
+                
+                if not resp.is_success():
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Failed to fetch grievances"
+                    )
+                
+                records = resp.get("records", [])
+                all_records.extend(records)
+                
+                has_more = len(records) == size
+                current_page += 1
+        else:
+            # Just get the requested page
+            query = {
+                "filter": {
+                    "user_id": user_id
+                },
+                "page": {
+                    "size": size,
+                    "offset": (page - 1) * size
+                }
+            }
+            
+            resp = xata.data().query("Grievance", query)
+            
+            if not resp.is_success():
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to fetch grievances"
+                )
+                
+            all_records = resp.get("records", [])
+        
+        # Get total count of grievances for this user (without pagination)
+        count_query = {
+            "filter": {
+                "user_id": user_id
+            }
+        }
+        total_resp = xata.data().aggregate("Grievance", {
+            "aggs": {
+                "total_count": {
+                    "count": {}
+                }
+            },
+            "filter": count_query["filter"]
+        })
+        
+        total_count = total_resp.get("aggs", {}).get("total_count", 0) if total_resp.is_success() else 0
+        
+        response = {
             "status": "success",
             "user_id": user_id,
-            "grievances": resp.get("records", []),
-            "total": len(resp.get("records", []))
+            "grievances": all_records,
+            "total": total_count
         }
+        
+        # Add pagination info if not fetching all records
+        if not fetch_all:
+            response.update({
+                "page": page,
+                "size": size,
+                "totalPages": (total_count + size - 1) // size if size > 0 else 0
+            })
+        
+        return response
         
     except Exception as e:
         raise HTTPException(
