@@ -2,7 +2,13 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 
 # Grievance status options
-STATUS_OPTIONS = ["pending", "in_progress", "resolved", "rejected"]
+STATUS_OPTIONS = [
+    "Active",
+    "Pending",
+    "Closed with resolution",
+    "Closed without resolution",
+    "Tender Issued"
+]
 
 class GrievanceBase(BaseModel):
     title: str
@@ -26,8 +32,11 @@ class GrievanceCreate(BaseModel):
 
 
 class GrievanceUpdate(BaseModel):
-    status: str
+    status: Optional[str] = None
     resolution_notes: Optional[str] = None
+    officer_closed_by: Optional[str] = None
+    final_status: Optional[str] = None
+    grievance_closing_date: Optional[str] = None
 
 
 class Grievance(GrievanceBase):

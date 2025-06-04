@@ -75,7 +75,6 @@ async def create_grievance(grievance: GrievanceCreate):
             "user_id": grievance.user_id,
             "cpgrams_category": grievance.cpgrams_category,
         }
-        
         return response_data
         
     except Exception as e:
@@ -119,10 +118,10 @@ async def update_grievance_status(grievance_id: str, update_data: GrievanceUpdat
             detail=f"Invalid status. Must be one of: {', '.join(STATUS_OPTIONS)}"
         )
 
-    
+
     try:
         # Check if grievance exists
-        grievance = xata.records().get("Grievances", grievance_id)
+        grievance = xata.records().get("Grievance", grievance_id)
         if not grievance.is_success():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -130,15 +129,18 @@ async def update_grievance_status(grievance_id: str, update_data: GrievanceUpdat
             )
         
         # Update the grievance
+        # Format datetime in RFC 3339 format with Z suffix for UTC
+        current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        
         update_fields = {
             "status": update_data.status,
-            "updated_at": datetime.now().isoformat()
+            "final_status": update_data.status,
+            "officer_closed_by": update_data.officer_closed_by,
+            "grievance_closing_date": current_time,
+            "updated_at": current_time
         }
         
-        if update_data.resolution_notes:
-            update_fields["resolution_notes"] = update_data.resolution_notes
-        
-        resp = xata.records().update("Grievances", grievance_id, update_fields)
+        resp = xata.records().update("Grievance", grievance_id, update_fields)
         if not resp.is_success():
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
