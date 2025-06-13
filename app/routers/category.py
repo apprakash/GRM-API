@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_token
-from ..utils.grievance_utils import process_grievance_category
-from pydantic import BaseModel
+from ..utils.grievance_utils import process_grievance_category, fetch_faqs
+from ..models.grievance_models import GrievanceCategoryRequest, FAQRequest, FAQResponse, FAQItem
+from typing import List
 
-# Define the request model
-class GrievanceCategoryRequest(BaseModel):
-    grievance_text: str
+# Request model is now imported from grievance_models.py
 
 # Define the router with authentication dependency
 router = APIRouter(
@@ -37,6 +36,35 @@ async def categorize_grievance(request: GrievanceCategoryRequest):
             "top_category": category_info.get('top_category'),
             "formatted_fields": category_info.get('formatted_fields', ""),
             "classified_category": category_info.get('classified_category', "")
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.post("/faq", response_model=FAQResponse)
+async def get_faq_information(request: FAQRequest):
+    """
+    Retrieve FAQ information based on a search query.
+    
+    This endpoint searches for relevant FAQ items using the provided query and returns:
+    - A list of FAQ items with their id, code, question, and answer
+    - The total count of returned FAQ items
+    
+    The number of returned items can be limited using the 'limit' parameter (default: 5)
+    """
+    try:
+        # Fetch FAQ items based on the query
+        faq_items = fetch_faqs(request.query, request.limit)
+        
+        # Return the FAQ information
+        return {
+            "status": "success",
+            "faqs": faq_items,
+            "count": len(faq_items)
         }
         
     except Exception as e:

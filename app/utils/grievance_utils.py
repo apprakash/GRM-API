@@ -18,6 +18,7 @@ weaviate_api_key = os.getenv("WEAVIATE_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
 voyageai_api_key = os.getenv("VOYAGEAI_API_KEY")
 collection_name = os.getenv("COLLECTION_NAME")
+faq_collection_name = os.getenv("FAQ_COLLECTION")
 
 # Global client variable
 client = None
@@ -319,3 +320,57 @@ def verify_follow_up_answers(original_grievance, follow_up_questions, additional
     except Exception as e:
         print(f"Error verifying follow-up answers: {e}")
         return None
+
+
+def fetch_faqs(query, limit=5):
+    """
+    Fetch FAQ information based on a query using vector search.
+    
+    Args:
+        query (str): The search query to find relevant FAQs
+        limit (int): Maximum number of FAQ items to return (default: 5)
+        
+    Returns:
+        list: List of structured FAQ items with their properties
+    """
+    try:
+        # Ensure client is initialized
+        global client
+        if client is None:
+            client, _ = initialize_client()
+        
+        if not faq_collection_name:
+            print("FAQ_COLLECTION environment variable is not set")
+            return []
+            
+        # Get the FAQ collection
+        faq_collection = client.collections.get(faq_collection_name)
+
+        response = faq_collection.query.hybrid(
+            query=query,
+            alpha=0.5,  # Balance between vector and keyword search
+            limit=limit,
+            rerank=Rerank(
+                prop="question",  # Rerank based on the question field
+                query=query
+            )
+        )
+
+        faqs = response.objects
+        faq_data = []
+
+        for i, data in enumerate(faqs, 1):
+            result = {
+                "id": data.properties.get("uuid"),
+                "code": data.properties.get("code"),
+                "question": data.properties.get("question"),
+                "answer": data.properties.get("answer"),
+            }
+            
+            faq_data.append(result)            
+        return faq_data
+    except Exception as e:
+        print(f"Error fetching FAQs: {e}")
+        import traceback
+        traceback.print_exc()
+        return []

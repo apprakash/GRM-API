@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 # Grievance status options
 STATUS_OPTIONS = [
@@ -92,3 +92,25 @@ class AnswerVerification(BaseModel):
     all_questions_answered: bool
     additional_follow_up_needed: bool
     suggested_follow_up: List[str] = Field(default_factory=list)
+
+
+class GrievanceCategoryRequest(BaseModel):
+    grievance_text: str
+
+
+class FAQRequest(BaseModel):
+    query: str
+    limit: int = Field(default=5, description="Maximum number of FAQ items to return")
+
+
+class FAQItem(BaseModel):
+    id: str
+    code: str
+    question: str
+    answer: str
+
+
+class FAQResponse(BaseModel):
+    status: str
+    faqs: List[FAQItem]
+    count: int
