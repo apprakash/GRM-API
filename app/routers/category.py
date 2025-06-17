@@ -1,11 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_token
 from ..utils.grievance_utils import process_grievance_category, fetch_faqs
-from ..models.grievance_models import GrievanceCategoryRequest, FAQRequest, FAQResponse, FAQItem
-from typing import List
+from ..models.grievance_models import GrievanceCategoryRequest, FAQRequest, FAQResponse
 
 # Request model is now imported from grievance_models.py
-
 # Define the router with authentication dependency
 router = APIRouter(
     prefix="/category",

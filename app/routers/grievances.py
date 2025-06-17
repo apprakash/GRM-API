@@ -107,7 +107,6 @@ async def get_grievance(grievance_id: str):
 
 
 
-
 @router.put("/{grievance_id}", response_model=dict)
 async def update_grievance_status(grievance_id: str, update_data: GrievanceUpdate):
     """Update the status of a grievance"""

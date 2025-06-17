@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import verify_token
 from xata.client import XataClient
 from dotenv import load_dotenv
-from ..models.user_models import UserBase, User, UserResponse, UserCreate
+from ..models.user_models import UserResponse, UserCreate
 
 load_dotenv()
 xata = XataClient()
